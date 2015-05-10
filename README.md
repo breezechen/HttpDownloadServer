@@ -14,6 +14,6 @@ Open .sln in vs2008, change include dir to yours, then compile.
 linux
 -----
 ```shell
-g++ *.cpp -o server -pthread  -lboost_system -lboost_filesystem -lboost_thread -static -O2 -s -DNDEBUG
+g++ *.cpp -o server -pthread  -lboost_system -lboost_filesystem -lboost_thread -static -O2 -DNDEBUG
 ```
 
