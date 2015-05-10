@@ -24,7 +24,13 @@ struct mapping
   { "htm", "text/html" },
   { "html", "text/html" },
   { "jpg", "image/jpeg" },
+  { "jpeg", "image/jpeg" },
   { "png", "image/png" },
+  { "css", "text/css"},
+  { "xml", "text/xml"},
+  { "js", "application/x-javascript"},
+  { "svg", "image/svg+xml" },
+  { "txt", "text/plain" },
   { 0, 0 } // Marks end of list.
 };
 

@@ -145,66 +145,76 @@ void request_handler::handle_request(const request& req, reply& rep)
 
 		if (boost::filesystem::is_directory(p))
 		{
-			std::ostringstream stringStream;
-			stringStream << html_str << std::endl;
-			stringStream << "<script>start(\"" << request_path << "\");</script>" << std::endl;
-
-			if (request_path.length() > 1)
+			if (boost::filesystem::exists(boost::filesystem::path(full_path + "index.html"))) 
 			{
-				stringStream << "<script>addRow(\"..\", \"..\", 1, \"0 B\", \"\"); </script>" << std::endl;
+				p += "index.html";
+			} else if (boost::filesystem::exists(boost::filesystem::path(full_path + "index.htm"))) 
+			{
+				p += "index.htm";
 			}
-
-			std::vector<boost::filesystem::path> files;
-
-
-			std::copy(boost::filesystem::directory_iterator(p), boost::filesystem::directory_iterator(), std::back_inserter(files));
-			std::sort(files.begin(), files.end());
-			try
+			else 
 			{
-				for (std::vector<boost::filesystem::path>::const_iterator it(files.begin()); it != files.end(); ++it)
+				std::ostringstream stringStream;
+				stringStream << html_str << std::endl;
+				stringStream << "<script>start(\"" << request_path << "\");</script>" << std::endl;
+
+				if (request_path.length() > 1)
 				{
-					if (boost::filesystem::is_directory(*it))
-			  {
-				  std::string name = it->filename().string();
+					stringStream << "<script>addRow(\"..\", \"..\", 1, \"0 B\", \"\"); </script>" << std::endl;
+				}
+
+				std::vector<boost::filesystem::path> files;
+
+
+				std::copy(boost::filesystem::directory_iterator(p), boost::filesystem::directory_iterator(), std::back_inserter(files));
+				std::sort(files.begin(), files.end());
+				try
+				{
+					for (std::vector<boost::filesystem::path>::const_iterator it(files.begin()); it != files.end(); ++it)
+					{
+						if (boost::filesystem::is_directory(*it))
+						{
+							std::string name = it->filename().string();
 #ifdef WIN32
-				  name = ansi_to_utf8(name);
+							name = ansi_to_utf8(name);
 #endif // WIN32
 
-				  stringStream << "<script>addRow(\"" << name << "\",\"" << name << "\",";
-				  stringStream << "1, \"0 B\", ";
-				  stringStream << "\"" << format_time(boost::filesystem::last_write_time(*it)) << "\"" << ");</script>" << std::endl;
-			  }
+							stringStream << "<script>addRow(\"" << name << "\",\"" << name << "\",";
+							stringStream << "1, \"0 B\", ";
+							stringStream << "\"" << format_time(boost::filesystem::last_write_time(*it)) << "\"" << ");</script>" << std::endl;
+						}
+					}
 				}
-			}
-			catch (...) {}
+				catch (...) {}
 
-			try
-			{
-				for (std::vector<boost::filesystem::path>::const_iterator it(files.begin()); it != files.end(); ++it)
+				try
 				{
-					if (boost::filesystem::is_regular_file(*it))
-			  {
-				  std::string name = it->filename().string();
+					for (std::vector<boost::filesystem::path>::const_iterator it(files.begin()); it != files.end(); ++it)
+					{
+						if (boost::filesystem::is_regular_file(*it))
+						{
+							std::string name = it->filename().string();
 #ifdef WIN32
-				  name = ansi_to_utf8(name);
+							name = ansi_to_utf8(name);
 #endif // WIN32
-				  stringStream << "<script>addRow(\"" << name << "\",\"" << name << "\",";
-				  stringStream << "0, \"" << size_string(boost::filesystem::file_size(*it)) << "\", ";
-				  stringStream << "\"" << format_time(boost::filesystem::last_write_time(*it)) << "\"" << ");</script>" << std::endl;
-			  }
+							stringStream << "<script>addRow(\"" << name << "\",\"" << name << "\",";
+							stringStream << "0, \"" << size_string(boost::filesystem::file_size(*it)) << "\", ";
+							stringStream << "\"" << format_time(boost::filesystem::last_write_time(*it)) << "\"" << ");</script>" << std::endl;
+						}
+					}
 				}
+				catch (...) {}
+
+				rep.content.append(stringStream.str());
+
+				rep.status = reply::ok;
+				rep.headers.resize(2);
+				rep.headers[0].name = "Content-Length";
+				rep.headers[0].value = boost::lexical_cast<std::string>(rep.content.size());
+				rep.headers[1].name = "Content-Type";
+				rep.headers[1].value = mime_types::extension_to_type("html");
+				break;
 			}
-			catch (...) {}
-
-			rep.content.append(stringStream.str());
-
-			rep.status = reply::ok;
-			rep.headers.resize(2);
-			rep.headers[0].name = "Content-Length";
-			rep.headers[0].value = boost::lexical_cast<std::string>(rep.content.size());
-			rep.headers[1].name = "Content-Type";
-			rep.headers[1].value = mime_types::extension_to_type("html");
-			break;
 		}
 
 		if (!boost::filesystem::exists(p))
@@ -217,7 +227,7 @@ void request_handler::handle_request(const request& req, reply& rep)
 
 		try
 		{
-			fm = boost::shared_ptr<boost::interprocess::file_mapping>(new boost::interprocess::file_mapping(full_path.c_str(), boost::interprocess::read_only));
+			fm = boost::shared_ptr<boost::interprocess::file_mapping>(new boost::interprocess::file_mapping(p.string().c_str(), boost::interprocess::read_only));
 		} 
 		catch(...) 
 		{
@@ -226,6 +236,10 @@ void request_handler::handle_request(const request& req, reply& rep)
 		}
 
 		std::string extension = p.extension().string();
+		if (extension[0] == '.') {
+			extension = extension.substr(1);
+		}
+
 		boost::uint64_t file_len = boost::filesystem::file_size(p);
 		boost::uint64_t mlen = (file_len > MEM_CACHE_SIZE) ? MEM_CACHE_SIZE : file_len;
 
