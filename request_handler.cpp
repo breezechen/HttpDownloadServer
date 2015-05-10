@@ -19,6 +19,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
+#include <boost/date_time/c_local_time_adjustor.hpp>
 #include "mime_types.hpp"
 #include "reply.hpp"
 #include "request.hpp"
@@ -40,7 +41,7 @@ std::string request_handler::format_time(std::time_t t)
 	std::basic_stringstream<char> ss;
 	ss.imbue(loc);
 
-	ss << from_time_t(t);
+	ss << boost::date_time::c_local_adjustor<ptime>::utc_to_local(from_time_t(t));
 
 	return ss.str();
 }
