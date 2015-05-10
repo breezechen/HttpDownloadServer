@@ -14,6 +14,7 @@
 #include <string>
 #include <boost/noncopyable.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/filesystem/path.hpp>
 
 namespace http {
 namespace server2 {
@@ -42,6 +43,7 @@ private:
   static bool url_decode(const std::string& in, std::string& out);
   static std::string format_time(time_t t);
   static std::string size_string(boost::uint64_t bytes);
+  static bool compare_nocase (const boost::filesystem::path& first, const boost::filesystem::path& second);
 
 #ifdef WIN32
   static std::string ansi_to_utf8(const std::string& ansi);

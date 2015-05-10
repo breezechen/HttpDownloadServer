@@ -54,9 +54,13 @@ std::string request_handler::size_string(boost::uint64_t bytes)
 	for (i = 0; i < 5; i++)
 	{
 		test = test >> 10;
-		if (test == 0) {
+		if (test <= 1) {
 			break;
 		}
+	}
+
+	if (i == 5) {
+		i--;
 	}
 
 	char buf[16];
@@ -70,6 +74,20 @@ std::string request_handler::size_string(boost::uint64_t bytes)
 	}
 	return std::string(buf);
 
+}
+
+bool request_handler::compare_nocase (const boost::filesystem::path& first, const boost::filesystem::path& second)
+{
+	unsigned int i=0;
+	const boost::filesystem::path::string_type& _first = first.native();
+	const boost::filesystem::path::string_type& _second = second.native();
+	while ( (i< _first.length()) && (i< _second.length()) )
+	{
+		if (tolower(_first[i])<tolower(_second[i])) return true;
+		else if (tolower(_first[i])>tolower(_second[i])) return false;
+		++i;
+	}
+	return ( _first.length() < _second.length() );
 }
 
 #ifdef WIN32
@@ -167,13 +185,15 @@ void request_handler::handle_request(const request& req, reply& rep)
 
 
 				std::copy(boost::filesystem::directory_iterator(p), boost::filesystem::directory_iterator(), std::back_inserter(files));
-				std::sort(files.begin(), files.end());
-				try
+				std::sort(files.begin(), files.end(), compare_nocase);
+
+				for (std::vector<boost::filesystem::path>::const_iterator it(files.begin()); it != files.end(); ++it)
 				{
-					for (std::vector<boost::filesystem::path>::const_iterator it(files.begin()); it != files.end(); ++it)
+					try
 					{
 						if (boost::filesystem::is_directory(*it))
 						{
+							std::time_t mtime = boost::filesystem::last_write_time(*it); 
 							std::string name = it->filename().string();
 #ifdef WIN32
 							name = ansi_to_utf8(name);
@@ -181,32 +201,34 @@ void request_handler::handle_request(const request& req, reply& rep)
 
 							stringStream << "<script>addRow(\"" << name << "\",\"" << name << "\",";
 							stringStream << "1, \"0 B\", ";
-							stringStream << "\"" << format_time(boost::filesystem::last_write_time(*it)) << "\"" << ");</script>" << std::endl;
+							stringStream << "\"" << format_time(mtime) << "\"" << ");</script>" << std::endl;
 						}
 					}
+					catch (...) {}
 				}
-				catch (...) {}
 
-				try
+
+
+				for (std::vector<boost::filesystem::path>::const_iterator it(files.begin()); it != files.end(); ++it)
 				{
-					for (std::vector<boost::filesystem::path>::const_iterator it(files.begin()); it != files.end(); ++it)
+					try
 					{
 						if (boost::filesystem::is_regular_file(*it))
 						{
+							std::time_t mtime = boost::filesystem::last_write_time(*it); 
 							std::string name = it->filename().string();
 #ifdef WIN32
 							name = ansi_to_utf8(name);
 #endif // WIN32
 							stringStream << "<script>addRow(\"" << name << "\",\"" << name << "\",";
 							stringStream << "0, \"" << size_string(boost::filesystem::file_size(*it)) << "\", ";
-							stringStream << "\"" << format_time(boost::filesystem::last_write_time(*it)) << "\"" << ");</script>" << std::endl;
+							stringStream << "\"" << format_time(mtime) << "\"" << ");</script>" << std::endl;
 						}
 					}
+					catch (...) {}
 				}
-				catch (...) {}
 
 				rep.content.append(stringStream.str());
-
 				rep.status = reply::ok;
 				rep.headers.resize(2);
 				rep.headers[0].name = "Content-Length";
@@ -245,7 +267,7 @@ void request_handler::handle_request(const request& req, reply& rep)
 
 		boost::interprocess::mapped_region region(*fm, boost::interprocess::read_only, 0, mlen);
 		boost::uint64_t processed = region.get_size();
-	
+
 		rep.status = reply::ok;
 		rep.headers.resize(2);
 		rep.headers[0].name = "Content-Length";
