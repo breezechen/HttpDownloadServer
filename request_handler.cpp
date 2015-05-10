@@ -64,7 +64,7 @@ std::string request_handler::size_string(boost::uint64_t bytes)
 	}
 	else 
 	{
-		sprintf(buf, "%d  B", bytes);
+		sprintf(buf, "%d B", bytes);
 	}
 	return std::string(buf);
 
