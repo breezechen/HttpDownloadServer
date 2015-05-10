@@ -41,6 +41,7 @@ private:
   /// Perform URL-decoding on a string. Returns false if the encoding was
   /// invalid.
   static bool url_decode(const std::string& in, std::string& out);
+  static std::string url_encode(const std::string &value);
   static std::string format_time(time_t t);
   static std::string size_string(boost::uint64_t bytes);
   static bool compare_nocase (const boost::filesystem::path& first, const boost::filesystem::path& second);

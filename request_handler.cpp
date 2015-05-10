@@ -151,6 +151,7 @@ void request_handler::handle_request(const request& req, reply& rep)
 #ifdef WIN32
 		request_path = utf8_to_ansi(request_path);
 #endif
+
 		// Request path must be absolute and not contain "..".
 		if (request_path.empty() || request_path[0] != '/'
 			|| request_path.find("..") != std::string::npos)
@@ -200,7 +201,7 @@ void request_handler::handle_request(const request& req, reply& rep)
 							name = ansi_to_utf8(name);
 #endif // WIN32
 
-							stringStream << "<script>addRow(\"" << name << "\",\"" << name << "\",";
+							stringStream << "<script>addRow(\"" << name << "\",\"" << url_encode(name) << "\",";
 							stringStream << "1, \"0 B\", ";
 							stringStream << "\"" << format_time(mtime) << "\"" << ");</script>" << std::endl;
 						}
@@ -221,7 +222,7 @@ void request_handler::handle_request(const request& req, reply& rep)
 #ifdef WIN32
 							name = ansi_to_utf8(name);
 #endif // WIN32
-							stringStream << "<script>addRow(\"" << name << "\",\"" << name << "\",";
+							stringStream << "<script>addRow(\"" << name << "\",\"" << url_encode(name) << "\",";
 							stringStream << "0, \"" << size_string(boost::filesystem::file_size(*it)) << "\", ";
 							stringStream << "\"" << format_time(mtime) << "\"" << ");</script>" << std::endl;
 						}
@@ -327,6 +328,35 @@ bool request_handler::url_decode(const std::string& in, std::string& out)
   }
   return true;
 }
+
+std::string request_handler::url_encode(const std::string &value)
+{
+	std::ostringstream escaped;
+	escaped.fill('0');
+	escaped << std::hex;
+
+	for (std::string::const_iterator i = value.begin(), n = value.end(); i != n; ++i) {
+		std::string::value_type c = (*i);
+
+		// Keep alphanumeric and other accepted characters intact
+		if (c == '-' ||
+			c == '.' ||
+			(c >= '0' && c <= '9') || 
+			(c >= 'A' && c <= 'Z')||
+			c == '_' ||
+			(c >= 'a' && c <= 'z') ||
+			c == '~') {
+			escaped << c;
+			continue;
+		}
+
+		// Any other characters are percent-encoded
+		escaped << '%' << std::setw(2) << int((unsigned char) c);
+	}
+
+	return escaped.str();
+}
+
 
 } // namespace server2
 } // namespace http
