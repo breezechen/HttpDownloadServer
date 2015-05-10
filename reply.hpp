@@ -15,6 +15,7 @@
 #include <vector>
 #include <boost/asio.hpp>
 #include "header.hpp"
+#include <fstream>
 
 namespace http {
 namespace server2 {
@@ -56,6 +57,8 @@ struct reply
 
   /// Get a stock reply.
   static reply stock_reply(status_type status);
+
+  boost::shared_ptr<std::ifstream> file_stream;
 };
 
 } // namespace server2

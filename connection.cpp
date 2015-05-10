@@ -48,9 +48,9 @@ void connection::handle_read(const boost::system::error_code& e,
     if (result)
     {
       request_handler_.handle_request(request_, reply_);
-      boost::asio::async_write(socket_, reply_.to_buffers(),
-          boost::bind(&connection::handle_write, shared_from_this(),
-            boost::asio::placeholders::error));
+	  boost::asio::async_write(socket_, reply_.to_buffers(),
+			  boost::bind(&connection::handle_write, shared_from_this(),
+			  boost::asio::placeholders::error));
     }
     else if (!result)
     {
@@ -76,17 +76,23 @@ void connection::handle_read(const boost::system::error_code& e,
 
 void connection::handle_write(const boost::system::error_code& e)
 {
-  if (!e)
-  {
-    // Initiate graceful connection closure.
-    boost::system::error_code ignored_ec;
-    socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-  }
-
-  // No new asynchronous operations are started. This means that all shared_ptr
-  // references to the connection object will disappear and the object will be
-  // destroyed automatically after this handler returns. The connection class's
-  // destructor closes the socket.
+	if (!e)
+	{
+		char buf[1024 * 4];
+		if (reply_.file_stream && reply_.file_stream->read(buf, sizeof(buf)).gcount() > 0)
+		{
+			reply_.content.assign(buf, reply_.file_stream->gcount());
+			boost::asio::async_write(socket_, boost::asio::buffer(reply_.content),
+				boost::bind(&connection::handle_write, shared_from_this(),
+				boost::asio::placeholders::error));
+		}
+		else 
+		{
+			// Initiate graceful connection closure.
+			boost::system::error_code ignored_ec;
+			socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+		}
+	}
 }
 
 } // namespace server2
