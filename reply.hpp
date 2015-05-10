@@ -14,8 +14,9 @@
 #include <string>
 #include <vector>
 #include <boost/asio.hpp>
+#include <boost/interprocess/file_mapping.hpp>
 #include "header.hpp"
-#include <fstream>
+
 
 namespace http {
 namespace server2 {
@@ -57,8 +58,13 @@ struct reply
 
   /// Get a stock reply.
   static reply stock_reply(status_type status);
-
-  boost::shared_ptr<std::ifstream> file_stream;
+  
+  struct {
+	boost::shared_ptr<boost::interprocess::file_mapping> file_mapping;
+	boost::uint64_t file_size;
+	boost::uint64_t processed;
+  } file;
+  
 };
 
 } // namespace server2

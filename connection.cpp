@@ -12,6 +12,7 @@
 #include <vector>
 #include <boost/bind.hpp>
 #include "request_handler.hpp"
+#include <boost/interprocess/mapped_region.hpp>
 
 namespace http {
 namespace server2 {
@@ -78,10 +79,16 @@ void connection::handle_write(const boost::system::error_code& e)
 {
 	if (!e)
 	{
-		char buf[1024 * 4];
-		if (reply_.file_stream && reply_.file_stream->read(buf, sizeof(buf)).gcount() > 0)
+		if (reply_.file.file_mapping && reply_.file.file_size > reply_.file.processed)
 		{
-			reply_.content.assign(buf, reply_.file_stream->gcount());
+			boost::uint64_t mlen = reply_.file.file_size - reply_.file.processed;
+			if (mlen > MEM_CACHE_SIZE)  {
+				mlen = MEM_CACHE_SIZE;
+			}
+			boost::interprocess::mapped_region region(*reply_.file.file_mapping, boost::interprocess::read_only, reply_.file.processed, mlen);
+			boost::uint64_t processed = region.get_size();
+			reply_.content.assign((const char*)region.get_address(), processed);
+			reply_.file.processed += processed;
 			boost::asio::async_write(socket_, boost::asio::buffer(reply_.content),
 				boost::bind(&connection::handle_write, shared_from_this(),
 				boost::asio::placeholders::error));

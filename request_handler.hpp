@@ -18,6 +18,7 @@
 namespace http {
 namespace server2 {
 
+#define MEM_CACHE_SIZE (1024 * 1024)
 struct reply;
 struct request;
 
