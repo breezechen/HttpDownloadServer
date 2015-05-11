@@ -265,10 +265,14 @@ void request_handler::handle_request(const request& req, reply& rep)
 		}
 
 		boost::uint64_t file_len = boost::filesystem::file_size(p);
-		boost::uint64_t mlen = (file_len > MEM_CACHE_SIZE) ? MEM_CACHE_SIZE : file_len;
-
-		boost::interprocess::mapped_region region(*fm, boost::interprocess::read_only, 0, mlen);
-		boost::uint64_t processed = region.get_size();
+		boost::uint64_t processed = 0;
+		if (file_len > 0) 
+		{
+			boost::uint64_t mlen = (file_len > MEM_CACHE_SIZE) ? MEM_CACHE_SIZE : file_len;
+			boost::interprocess::mapped_region region(*fm, boost::interprocess::read_only, 0, mlen);
+			processed = region.get_size();
+			rep.content.assign((const char *)region.get_address(), processed);
+		}
 
 		rep.status = reply::ok;
 		rep.headers.resize(2);
@@ -276,8 +280,7 @@ void request_handler::handle_request(const request& req, reply& rep)
 		rep.headers[0].value = boost::lexical_cast<std::string>(file_len);
 		rep.headers[1].name = "Content-Type";
 		rep.headers[1].value = mime_types::extension_to_type(extension);
-		rep.content.assign((const char *)region.get_address(), processed);
-
+		
 		rep.file.file_mapping = fm;
 		rep.file.file_size = file_len;
 		rep.file.processed = processed;
