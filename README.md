@@ -1,5 +1,5 @@
-Deprecated!!! See https://github.com/breezechen/static_server/c++
-=================================================================
+Deprecated!!! See https://github.com/breezechen/static_server/tree/master/c%2B%2B
+=================================================================================
 
 
 HttpDownloadServer
