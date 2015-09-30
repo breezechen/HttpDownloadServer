@@ -1,3 +1,7 @@
+Deprecated!!! See https://github.com/breezechen/static_server/c++
+=================================================================
+
+
 HttpDownloadServer
 ==================
 A cross-platform http static server based on boost asio example http server2. Now it's supporting large file(> 4G) download.
